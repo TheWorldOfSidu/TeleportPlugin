@@ -24,7 +24,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 public class Main extends JavaPlugin implements Listener {
 
-	HashMap<String, Boolean> players;
+	HashMap<String, Player> requests;
 
 	@Override
 	public void onEnable() {
@@ -63,44 +63,44 @@ public class Main extends JavaPlugin implements Listener {
 			return true;
 		}
 
-		//zmiana zezwolenia na TP
-		if (cmd.getName().equalsIgnoreCase("pozwolenie")) {
-			if(args[1].equalsIgnoreCase("sprawdz")) {
-				if (players.get(sender.getName())){
-					sender.sendMessage(ChatColor.GREEN + "Obecnie zezwalasz na teleportacje do siebie");
-					return true;
-
-				} else {
-					sender.sendMessage(ChatColor.DARK_RED + "Obecnie nie zezwalasz na teleportacje do siebie");
-					return true;
-				}
-			} else if (args[1].equalsIgnoreCase("zmien")) {
-				if (args[2].equalsIgnoreCase("TAK")) {
-					players.replace(sender.getName(), true);
-					sender.sendMessage(ChatColor.GREEN + "Od teraz zezwalasz na teleportacje do siebie");
-					return true;
-
-				} else if (args[2].equalsIgnoreCase("NIE")) {
-					players.replace(sender.getName(), false);
-					sender.sendMessage(ChatColor.DARK_RED + "Od teraz nie zezwalasz na teleportacje do siebie");
-					return true;
-
-				} else {
-					sender.sendMessage(ChatColor.RED + "Uzycie: /pozwolenie zmien TAK|NIE");
-					return true;
-
-				}
-			} else {
-				sender.sendMessage(ChatColor.RED + "Uzycie: /pozwolenie sprawdz|zmien");
+			// tp accept
+		if (cmd.getName().equalsIgnoreCase("ok")) {
+			if (!(sender instanceof Player)){
+				System.out.println("Konsola nie moze nikogo do siebie teleportowac");
 				return true;
 			}
+			if (!requests.containsKey(sender.getName())) {
+				sender.sendMessage(ChatColor.DARK_RED + "Nikt aktualnie nie proboje sie do Ciebie teleportowac!");
+				return true;
+			}
+			//teleportacja
+			Player player = requests.get(sender.getName());
+			player.sendMessage("Teleportacja zaakceptowana");
+			sender.sendMessage("Teleportacja zaakceptowana");
+			Location loc = ((Player) sender).getLocation();
+			player.teleport(loc);
+			requests.remove(sender.getName());
+			return true;
 		}
+
+		if (cmd.getName().equalsIgnoreCase("nie")) {
+			if (!(sender instanceof Player)){
+				System.out.println("Konsola nie moze nikogo do siebie teleportowac");
+				return true;
+			}
+			if (!requests.containsKey(sender.getName())) {
+				sender.sendMessage(ChatColor.DARK_RED + "Nikt aktualnie nie proboje sie do Ciebie teleportowac!");
+				return true;
+			}
+			Player player = requests.get(sender.getName());
+			player.sendMessage("Teleportacja anulowana");
+			sender.sendMessage("Teleportacja anulowana");
+			requests.remove(sender.getName());
+
+		}
+
 		return false;
 	}
-
-
-
-
 
 
 	public ShapedRecipe getRecipe() { //teleportation scroll
@@ -155,11 +155,13 @@ public class Main extends JavaPlugin implements Listener {
 							+ " i upewnij sie, ze zawiera ona nick gracza, ktory jest online"); //player not online
 					return;
 				}
+					requests.put(target.getName(), player);
+					player.sendMessage(ChatColor.YELLOW + "" + ChatColor.BOLD + "Wysłano zapytanie o teleportacje do: "
+							+ target.getName());
+					target.sendMessage(ChatColor.YELLOW + player.getName() + "Chce sie do Ciebie teleportowac");
+					target.sendMessage(ChatColor.YELLOW + "Aby zaakceptować wpisz " + ChatColor.DARK_GREEN + "/ok");
+					target.sendMessage(ChatColor.YELLOW + "Aby odrzucic wpisz " + ChatColor.DARK_GREEN + "/nie");
 
-				if (players.get(target.getName())) {
-					//jesli gracz zezwala na teleport
-					player.teleport(target.getLocation()); // teleport player to target
-					player.sendMessage(ChatColor.YELLOW + "" + ChatColor.BOLD + "Teleportacja do " + target.getName());
 					if (player.getInventory().getItemInMainHand().getAmount() > 1) {
 						player.getInventory().getItemInMainHand().setAmount(
 								(player.getInventory().getItemInMainHand().getAmount() - 1));
@@ -169,27 +171,15 @@ public class Main extends JavaPlugin implements Listener {
 								getType() != Material.AIR)
 							player.getInventory().removeItem(player.getInventory().getItemInMainHand());
 					}
-				} else {
-					player.sendMessage(ChatColor.RED + "gracz obecnie nie zezwala na teleportowanie sie do niego");
-				}
 			}
 		}catch(Exception e) {
-			System.out.println("No kurwa jeblo przy tepaniu XD");
-			event.getPlayer().sendMessage(ChatColor.RED + "Ziomek no, cos jeblo przy tepaniu XD zglos to Sidowi na discordzie");
+			System.out.println("Teleportation failed");
+			event.getPlayer().sendMessage(ChatColor.RED + "Cos poszlo nie tak. Zglos to do administracji " +
+					"serwera/developera");
 		}
 
 
     }
-
-    @EventHandler
-	public void onLogin(PlayerLoginEvent event) {
-		players.put(event.getPlayer().getName(), true);
-	}
-
-	@EventHandler
-	public void onQuit(PlayerQuitEvent event) {
-		players.remove(event.getPlayer().getName());
-	}
 
 
 }
