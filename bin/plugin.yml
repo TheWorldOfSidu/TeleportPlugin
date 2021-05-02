@@ -1,0 +1,11 @@
+main: me.Siup.TP.Main
+name: Teleport
+version: 2.3
+author: Siup
+
+commands:
+   nazwij:
+      description: Uzycie /nazwij <nickname>
+   pozwolenie:
+      description: Uzycie /pozwolenie <sprawdz|zmien>
+ 
