@@ -1,8 +1,6 @@
 package me.Siup.TP;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 
 import org.bukkit.*;
 import org.bukkit.command.Command;
@@ -12,6 +10,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.ShapedRecipe;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -20,7 +19,8 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 public class Main extends JavaPlugin implements Listener {
 
-	HashMap<String, Player> requests;
+	HashMap<UUID, UUID> requests = new HashMap<UUID, UUID>();
+	// <target, player>
 
 	@Override
 	public void onEnable() {
@@ -60,22 +60,23 @@ public class Main extends JavaPlugin implements Listener {
 		}
 
 			// tp accept
+
 		if (cmd.getName().equalsIgnoreCase("ok")) {
 			if (!(sender instanceof Player)){
 				System.out.println("Konsola nie moze nikogo do siebie teleportowac");
 				return true;
 			}
-			if (!requests.containsKey(sender.getName())) {
+			if (!requests.containsKey(((Player) sender).getUniqueId())) {
 				sender.sendMessage(ChatColor.DARK_RED + "Nikt aktualnie nie proboje sie do Ciebie teleportowac!");
 				return true;
 			}
 			//teleportacja
-			Player player = requests.get(sender.getName());
+			Player player = getServer().getPlayer(requests.get(((Player) sender).getUniqueId()));
 			player.sendMessage("Teleportacja zaakceptowana");
 			sender.sendMessage("Teleportacja zaakceptowana");
 			Location loc = ((Player) sender).getLocation();
 			player.teleport(loc);
-			requests.remove(sender.getName());
+			requests.remove(((Player) sender).getUniqueId());
 			return true;
 		}
 
@@ -84,14 +85,14 @@ public class Main extends JavaPlugin implements Listener {
 				System.out.println("Konsola nie moze nikogo do siebie teleportowac");
 				return true;
 			}
-			if (!requests.containsKey(sender.getName())) {
+			if (!requests.containsKey(((Player) sender).getUniqueId())) {
 				sender.sendMessage(ChatColor.DARK_RED + "Nikt aktualnie nie proboje sie do Ciebie teleportowac!");
 				return true;
 			}
-			Player player = requests.get(sender.getName());
+			Player player = getServer().getPlayer(requests.get(((Player) sender).getUniqueId()));
 			player.sendMessage("Teleportacja anulowana");
 			sender.sendMessage("Teleportacja anulowana");
-			requests.remove(sender.getName());
+			requests.remove(((Player) sender).getUniqueId());
 
 		}
 
@@ -146,12 +147,13 @@ public class Main extends JavaPlugin implements Listener {
 						.getItemMeta().getDisplayName());
 				Player player = event.getPlayer();
 
+
 				if (target == null) {
 					player.sendMessage(ChatColor.RED + "" + ChatColor.BOLD + "Cel nie istnieje, sprawdz nazwe przedmiotu"
 							+ " i upewnij sie, ze zawiera ona nick gracza, ktory jest online"); //player not online
 					return;
 				}
-					requests.put(target.getName(), player);
+					requests.put(target.getUniqueId(), player.getUniqueId());
 					player.sendMessage(ChatColor.YELLOW + "" + ChatColor.BOLD + "Wysłano zapytanie o teleportacje do: "
 							+ target.getName());
 					target.sendMessage(ChatColor.YELLOW + player.getName() + "Chce sie do Ciebie teleportowac");
@@ -172,10 +174,22 @@ public class Main extends JavaPlugin implements Listener {
 			System.out.println("Teleportation failed");
 			event.getPlayer().sendMessage(ChatColor.RED + "Cos poszlo nie tak. Zglos to do administracji " +
 					"serwera/developera");
+			e.printStackTrace();
 		}
 
 
     }
 
+
+    @EventHandler
+	public void onQuit(PlayerQuitEvent event) {
+		Player player = event.getPlayer();
+
+		requests.remove(player.getUniqueId());
+		if (requests.containsValue(player.getUniqueId())) {
+			requests.entrySet().removeIf(entry -> entry.getValue().equals(player.getUniqueId()));
+		}
+
+	}
 
 }

@@ -1,11 +1,13 @@
 main: me.Siup.TP.Main
 name: Teleport
-version: 2.3
+version: 3.0
 author: Siup
 
 commands:
    nazwij:
       description: Uzycie /nazwij <nickname>
-   pozwolenie:
+   ok:
       description: Uzycie /pozwolenie <sprawdz|zmien>
+   nie:
+      description: penis
  
